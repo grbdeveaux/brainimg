@@ -9,23 +9,23 @@ from skimage.morphology import extrema
 from skimage.morphology import watershed as skwater
 
 def ShowImage(title,img,ctype):
-  plt.figure(figsize=(10, 10))
-  if ctype=='bgr':
-    b,g,r = cv2.split(img)       # get b,g,r
-    rgb_img = cv2.merge([r,g,b])     # switch it to rgb
-    plt.imshow(rgb_img)
-  elif ctype=='hsv':
-    rgb = cv2.cvtColor(img,cv2.COLOR_HSV2RGB)
-    plt.imshow(rgb)
-  elif ctype=='gray':
-    plt.imshow(img,cmap='gray')
-  elif ctype=='rgb':
-    plt.imshow(img)
-  else:
-    raise Exception("Unknown colour type")
-  plt.axis('off')
-  plt.title(title)
-  plt.show()
+    plt.figure(figsize=(10, 10))
+    if ctype=='bgr':
+        b,g,r = cv2.split(img)       # get b,g,r
+        rgb_img = cv2.merge([r,g,b])     # switch it to rgb
+        plt.imshow(rgb_img)
+    elif ctype=='hsv':
+        rgb = cv2.cvtColor(img,cv2.COLOR_HSV2RGB)
+        plt.imshow(rgb)
+    elif ctype=='gray':
+        plt.imshow(img,cmap='gray')
+    elif ctype=='rgb':
+        plt.imshow(img)
+    else:
+        raise Exception("Unknown colour type")
+    plt.axis('off')
+    plt.title(title)
+    plt.show()
 
 # Read in image
 img = cv2.imread('./scans/brain1.png')
@@ -83,7 +83,16 @@ equ = cv2.equalizeHist(gray)
 ret = np.hstack((gray,equ)) #stacking images side-by-side
 cv2.imwrite('res.png',ret)
 
+# https://docs.opencv.org/3.4.3/d7/d4d/tutorial_py_thresholding.html
 
+ret,img = cv2.threshold(img,160,255,cv2.THRESH_BINARY)
+
+cv2.imwrite('Pre Erosion.png',img)
+
+kernel = np.ones((5,5),np.uint8)
+erosion = cv2.erode(img,kernel,iterations = 1)
+
+cv2.imwrite('Post Erosion.png',erosion)
 
 # How do we remove the bright spots that aren't tumours?
 # Maybe this is just a bad image and the real images won't have any big bright spots other than the tumour.
