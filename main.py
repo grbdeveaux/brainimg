@@ -4,6 +4,8 @@ import numpy as np
 import cv2 as cv
 import scipy.io
 
+from PIL import Image, ImageStat
+
 from matplotlib import pyplot as plt
 from skimage.morphology import extrema
 from skimage.morphology import watershed as skwater
@@ -26,6 +28,11 @@ def ShowImage(title,img,ctype):
     plt.axis('off')
     plt.title(title)
     plt.show()
+
+def brightness( im_file ):
+   im = Image.open(im_file).convert('L')
+   stat = ImageStat.Stat(im)
+   return stat.mean[0]
 
 # Read in image
 img = cv.imread('./scans/brain1.png')
@@ -62,12 +69,19 @@ closing = cv.morphologyEx(brain_mask, cv.MORPH_CLOSE, kernel)
 brain_out = img.copy()
 #In a copy of the original image, clear those pixels that don't correspond to the brain
 brain_out[closing==False] = (0,0,0)
-#ShowImage('Connected Components222',brain_out,'rgb')
+#ShowImage('Skull Removal',brain_out,'gray')
 
 
 
 
+# https://stackoverflow.com/questions/3490727/what-are-some-methods-to-analyze-image-brightness-using-python
 
+#avgbrightness = brightness('res.png')
+
+a=brain_out
+average = a[np.nonzero(a)].mean()
+
+print(average)
 
 
 
@@ -83,9 +97,11 @@ equ = cv.equalizeHist(gray)
 ret = np.hstack((gray,equ)) #stacking images side-by-side
 cv.imwrite('res.png',ret)
 
+#ShowImage('Skull Removal',ret,'rgb')
+
 # https://docs.opencv.org/3.4.3/d7/d4d/tutorial_py_thresholding.html
 
-ret,img = cv.threshold(img,150,255,cv.THRESH_BINARY)
+ret,img = cv.threshold(img,100,255,cv.THRESH_BINARY)
 
 cv.imwrite('Pre Erosion.png',img)
 
@@ -100,9 +116,8 @@ cv.imwrite('Post Dilation1.png',img)
 
 
 #https://answers.opencv.org/question/97416/replace-a-range-of-colors-with-a-specific-color-in-python/
-image = np.zeros((400,400,3), dtype="uint8")
-image[np.where((image==[0,0,0]).all(axis=2))] = [255,255,255]
-
+img[np.where((img==[255,255,255]).all(axis=2))] = [0,0,255]
+cv.imwrite('whatsthis.png',img)
 
 # https://docs.opencv.org/3.4/d5/dc4/tutorial_adding_images.html
 
