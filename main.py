@@ -29,13 +29,9 @@ def ShowImage(title,img,ctype):
     plt.title(title)
     plt.show()
 
-def brightness( im_file ):
-   im = Image.open(im_file).convert('L')
-   stat = ImageStat.Stat(im)
-   return stat.mean[0]
-
 # Read in image
-img = cv.imread('./scans/brain1.png')
+og = cv.imread('./scans/brain1b.png')
+img = og
 gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 #ShowImage('Brain with Skull', gray, 'gray')
 
@@ -79,9 +75,9 @@ brain_out[closing==False] = (0,0,0)
 #avgbrightness = brightness('res.png')
 
 a=brain_out
-average = a[np.nonzero(a)].mean()
+avgb = a[np.nonzero(a)].mean()
 
-print(average)
+print(avgb)
 
 
 
@@ -101,7 +97,7 @@ cv.imwrite('res.png',ret)
 
 # https://docs.opencv.org/3.4.3/d7/d4d/tutorial_py_thresholding.html
 
-ret,img = cv.threshold(img,100,255,cv.THRESH_BINARY)
+ret,img = cv.threshold(img,1.15*avgb,255,cv.THRESH_BINARY)
 
 cv.imwrite('Pre Erosion.png',img)
 
@@ -109,9 +105,9 @@ kernel = np.ones((5,5),np.uint8)
 
 #img = cv.morphologyEx(img, cv.MORPH_OPEN, kernel)
 #cv.imwrite('Post Opening.png',img)
-img = cv.erode(img,kernel,iterations = 2)
+img = cv.erode(img,kernel,iterations = 3)
 cv.imwrite('Post Erosion1.png',img)
-img = cv.dilate(img,kernel,iterations = 2)
+img = cv.dilate(img,kernel,iterations = 4)
 cv.imwrite('Post Dilation1.png',img)
 
 
@@ -128,14 +124,15 @@ except NameError:
     raw_input = input  # Python 3
 
 
-print(''' Simple Linear Blender
------------------------
-* Enter alpha [0.0-1.0]: ''')
-input_alpha = float(raw_input().strip())
+#print(''' Simple Linear Blender
+#-----------------------
+#* Enter alpha [0.0-1.0]: ''')
+#input_alpha = float(raw_input().strip())
+input_alpha = 0.5
 if 0 <= alpha <= 1:
     alpha = input_alpha
 # [load]
-src1 = cv.imread(cv.samples.findFile('./scans/brain1.png'))
+src1 = og
 src2 = img
 # [load]
 if src1 is None:
@@ -147,7 +144,7 @@ elif src2 is None:
 # [blend_images]
 beta = (1.0 - alpha)
 dst = cv.addWeighted(src1, alpha, src2, beta, 0.0)
-cv.imwrite('Blendaroony.png',dst)
+cv.imwrite('Blendaroony1.png',dst)
 # [blend_images]
 # [display]
 cv.imshow('dst', dst)
@@ -155,37 +152,9 @@ cv.waitKey(0)
 # [display]
 cv.destroyAllWindows()
 
-
-
 # How do we remove the bright spots that aren't tumours?
 # Maybe this is just a bad image and the real images won't have any big bright spots other than the tumour.
 # Then we can do opening and dilation and all that's gonna be left is the tumour.
 # Good approach from here might be to remove everything that's ~200 brightness or lower...
 # Then open, then dilate, then label
 # At this point we should probably be able to segment a few things.
-
-
-
-
-
-# noise removal
-kernel = np.ones((3,3),np.uint8)
-opening = cv.morphologyEx(thresh,cv.MORPH_OPEN,kernel, iterations = 2)
-# sure background area
-sure_bg = cv.dilate(opening,kernel,iterations=3)
-# Finding sure foreground area
-dist_transform = cv.distanceTransform(opening,cv.DIST_L2,5)
-ret, sure_fg = cv.threshold(dist_transform,0.7*dist_transform.max(),255,0)
-# Finding unknown region
-sure_fg = np.uint8(sure_fg)
-unknown = cv.subtract(sure_bg,sure_fg)
-
-# Marker labelling
-ret, markers = cv.connectedComponents(sure_fg)
-# Add one to all labels so that sure background is not 0, but 1
-markers = markers+1
-# Now, mark the region of unknown with zero
-markers[unknown==255] = 0
-
-markers = cv.watershed(img,markers)
-img[markers == -1] = [255,0,0]
