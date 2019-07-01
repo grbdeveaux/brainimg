@@ -3,3 +3,7 @@ Icon?
 *.swp
 ./scans/
 ./.idea
+
+\.idea/
+
+scans/
