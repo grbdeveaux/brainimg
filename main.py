@@ -30,7 +30,7 @@ def ShowImage(title,img,ctype):
     plt.show()
 
 # Read in image
-og = cv.imread('./scans/brain1b.png')
+og = cv.imread('./scans/brain1.png')
 img = og
 gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 #ShowImage('Brain with Skull', gray, 'gray')
