@@ -11,39 +11,30 @@ set(0, 'defaultTextInterpreter', 'tex');
 set(groot, 'defaultAxesTickLabelInterpreter', 'tex');
 set(groot, 'defaultLegendInterpreter', 'tex');
 
+
 %%
 % SET IMPORTANT PARAMETERS
 tumor_thresh = 140; % NEED A BETTER WAY OF FINDING TUMOR
 
 
-%%
-% Get the name of the image the user wants to use.
-% baseFileName = 'skull_stripping_demo_image.dcm';
-baseFileName = 'brain1.png';
-% Get the full filename, with path prepended.
-folder = pwd;
-fullFileName = fullfile(folder, baseFileName);
+imageDir = '~/Documents/TrainingData/MICCAI_BraTS_2018_Data_Training/HGG/';
+imgName = 'Brats18_CBICA_AAB_1';
+modality = 'flair'
+img = [imageDir imgName filesep imgName '_' modality '.nii'];
 
-% Check if exists in specified location.
-if ~exist(fullFileName, 'file')
-	% Check if file exists in current directory.
-	if ~exist(baseFileName, 'file')
-		% Still not found, tell user and close program.
-		errorMessage = sprintf('Error: %s does not exist in the search path folders.', fullFileName);
-		uiwait(warndlg(errorMessage));
-		return;
-	end
-end
+V = niftiread(img);
+img = V(:,:,100);
+img = rescale(img, 0, 255)
+img = uint8(img)
 
-%%
-% Read in image
-img = imread(fullFileName);
+%% START
+baseFileName = imgName
 % Get the dimensions of the image.  
 % Get the number of color channels in the image.
 [rows, columns, numberOfColorChannels] = size(img)
 
 %Convert image to grayscale
-img = rgb2gray(img);
+%img = rgb2gray(img);
 
 % Display the image.
 subplot(2, 3, 1);
