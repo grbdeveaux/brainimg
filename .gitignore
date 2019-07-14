@@ -3,6 +3,8 @@ Icon?
 *.swp
 ./scans/
 ./.idea
+./MICCAI_BraTS_2018_Data_Training
+./MICCAI_BraTS_2019_Data_Training
 
 \.idea/
 
