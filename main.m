@@ -8,7 +8,7 @@ set(groot, 'defaultLegendInterpreter', 'tex');
 
 %% Modifiable parameters
 
-otsuScale = 1.1;
+otsuScale = 1.3;
 strelSize = 2;
 growingFactor = 1.3;
 
@@ -54,23 +54,35 @@ brainImage = imgSlice; % Initialize
 brainImage(~binaryBrain) = 0; % only keep brain
 
 %% Now threshold to find the tumor
+brainIndices = find(brainImage>1);
+brainPixels = brainImage(brainIndices);
+preEqBrain = brainPixels;
+postEqBrain = histeq(brainPixels);
 
-otsuImg= brainImage(find(brainImage>1)); % Remove background pixels
+postEqBrainImage = brainImage;
+postEqBrainImage(brainIndices) = postEqBrain;
+
+
+otsuImg= postEqBrainImage(find(postEqBrainImage>1)); % Remove background pixels
+
+
 otsuThresh = graythresh(otsuImg);
 tumorThresh= otsuScale * otsuThresh
 
-binaryBrain = imbinarize(brainImage, tumorThresh);
+tumorThreshed = imbinarize(postEqBrainImage, tumorThresh);
 
-%% Dilate binarized prediction to connect neighbouring blobs
+%% Dilate binarized prediction to connect neighbouring blobs and fill in
 
 SE = strel('diamond',strelSize)
 
-dilatedTumorBinary= imdilate(binaryBrain,SE);
+dilatedTumorBinary= imdilate(tumorThreshed,SE);
 biggestBlob = bwareafilt(dilatedTumorBinary, 1);
 
-binaryTumorImage = biggestBlob .* binaryBrain;
-binaryTumorImage = imfill( binaryTumorImage ,'holes')
+binaryTumorImage = biggestBlob .* tumorThreshed;
+binaryTumorImage = imfill(binaryTumorImage ,'holes')
 prediction = logical(binaryTumorImage);
+
+biggestBlob = bwareafilt(prediction, 1);
 
 %% Region growing to select neighbouring bright areas
 
@@ -82,11 +94,12 @@ center = regionprops(biggestBlob,'centroid');
 centx = center.Centroid(1);
 centy = center.Centroid(2);
 
-pregrow = imgSlice + 60000.*uint16(pred);
+preGrow1 = imgSlice + 60000.*uint16(pred);
 
-postgrow = grayconnected(pregrow,uint8(centy),uint8(centx), uint16(growingFactor*maxvalue*tumorThresh)) 
+postGrow1 = grayconnected(preGrow1,uint8(centy),uint8(centx), uint16(growingFactor*maxvalue*tumorThresh)) 
+postGrow1 = imfill(postGrow1,'holes')
 
-prediction=postgrow;
+prediction = postGrow1;
 
 %% Compare
 
@@ -128,14 +141,26 @@ compareImage = cat(3, R, G, B);
 
 %% Write all the images
 
-writePath = [pwd '/Results/' imgFileName 'Original.png'];
+writePath = [pwd '/Results/' imgFileName '0. Tumor Thresholded.png'];
+imwrite(tumorThreshed, writePath);
+
+writePath = [pwd '/Results/' imgFileName '1. Dilated Tumor Binary.png'];
+imwrite(dilatedTumorBinary, writePath);
+
+writePath = [pwd '/Results/' imgFileName '2. Biggest Blob.png'];
+imwrite(biggestBlob, writePath);
+
+writePath = [pwd '/Results/' imgFileName '3. Tumor Prediction (post grow 1).png'];
+imwrite(postGrow1, writePath);
+
+writePath = [pwd '/Results/' imgFileName '4. Original.png'];
 imwrite(uint16(imgSlice), writePath);
 
-writePath = [pwd '/Results/' imgFileName 'Prediction.png'];
+writePath = [pwd '/Results/' imgFileName '5. Prediction.png'];
 imwrite(uint16(predictionOverlayed), writePath);
 
-writePath = [pwd '/Results/' imgFileName 'Ground Truth.png'];
+writePath = [pwd '/Results/' imgFileName '6. Ground Truth.png'];
 imwrite(uint16(truthOverlayed), writePath);
 
-writePath = [pwd '/Results/' imgFileName '.png'];
+writePath = [pwd '/Results/' imgFileName '7. Comparison.png'];
 imwrite(uint16(compareImage), writePath);
